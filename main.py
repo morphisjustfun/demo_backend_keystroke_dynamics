@@ -64,6 +64,7 @@ class KeystrokeQuery:
     def query(self, json_data):
         self.current_user = json_data['username']
         self.chracter_time = json_data['characterTime']
+        self.chracter_time = list(filter(lambda x: x['character'] in 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789áéíóúÁÉÍÓÚ', self.chracter_time))
         self.load_df()
         keystrokes = self.get_vector()
         if self.df.shape[0] < self.MIN_RECORDS:
@@ -88,6 +89,8 @@ class KeystrokeQuery:
     def save(self, json_data):
         self.current_user = json_data['username']
         self.chracter_time = json_data['characterTime']
+        # delete from chracter_time every record with character not in [a-zA-Z0-9] including tildes
+        self.chracter_time = list(filter(lambda x: x['character'] in 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789áéíóúÁÉÍÓÚ', self.chracter_time))
         self.load_df()
         keystrokes = self.get_vector()
         self.df.loc[len(self.df)] = keystrokes
@@ -111,11 +114,9 @@ def auth():
     if not exists_folder(f'models/{client_id}'):
         os.mkdir(f'models/{client_id}')
 
-    characterTime = body['characterTime']
-
     aka = KeystrokeQuery(client_id, min_records=20, threshold=0.68)
     result = aka.query(body)
-    # timestamp in miliseconds since epoch
+
     timestamp = datetime.datetime.now().timestamp()
     toSendUser = [client_id, timestamp, username, result]
     toSendUserPayload = hashlib.sha256(str(toSendUser).encode()).hexdigest()
@@ -156,4 +157,4 @@ def train():
 
 
 if __name__ == "__main__":
-    app.run(debug=True, port=9812, host='0.0.0.0')
+    app.run(debug=True, port=8000, host='0.0.0.0')
